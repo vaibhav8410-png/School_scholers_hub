@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2340C4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1326" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Fees, exams, student progress and timetable for Scholars Hub coaching.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Scholars Hub</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Mukta:wght@400;500;600;700&display=swap">
+<style>
+:root{color-scheme:light;padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: phone-first app shell. Sticky header with a notebook-cover mark, one scrolling column (max 720px), fixed bottom tab bar.
+   Look: blue-ink notebook on cool paper, yellow margin line as the brand detail, red reserved for money overdue / marks dropping. */
+:root{
+  --bg:#F1F4FB; --surface:#FFFFFF; --surface-2:#E9EDF8; --ink:#141A33; --muted:#566089; --line:#DAE0F0;
+  --accent:#2340C4; --accent-ink:#FFFFFF; --accent-soft:#E2E8FF; --hl:#FFD94A;
+  --good:#16793C; --good-soft:#DCF2E4; --warn:#9A5600; --warn-soft:#FFEDCB; --bad:#C0302B; --bad-soft:#FCE2E0;
+  --scrim:rgba(8,12,30,.55);
+  --f-display:'Baloo 2','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Mukta',system-ui,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1326; --surface:#161D37; --surface-2:#1E2748; --ink:#E8ECFA; --muted:#98A1C8; --line:#2A3460;
+    --accent:#8EA2FF; --accent-ink:#0E1330; --accent-soft:#222C5A; --hl:#FFD94A;
+    --good:#63D391; --good-soft:#163A2A; --warn:#F5B454; --warn-soft:#3F2E10; --bad:#FF8680; --bad-soft:#4A1E20;
+    --scrim:rgba(0,0,0,.65); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1326; --surface:#161D37; --surface-2:#1E2748; --ink:#E8ECFA; --muted:#98A1C8; --line:#2A3460;
+  --accent:#8EA2FF; --accent-ink:#0E1330; --accent-soft:#222C5A; --hl:#FFD94A;
+  --good:#63D391; --good-soft:#163A2A; --warn:#F5B454; --warn-soft:#3F2E10; --bad:#FF8680; --bad-soft:#4A1E20;
+  --scrim:rgba(0,0,0,.65); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{width:100%;max-width:720px;margin-inline:auto;padding-inline:16px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:34px;height:34px;flex:none}
+.l-paper{fill:var(--accent)} .l-margin{stroke:var(--hl);stroke-width:2.2;fill:none} .l-rule{stroke:var(--accent-ink);stroke-width:2;stroke-linecap:round;fill:none;opacity:.9}
+.brand b{display:block;font-family:var(--f-display);font-weight:800;font-size:20px;line-height:1.05;letter-spacing:.1px}
+.brand span{display:block;font-size:12px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.sync{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.sync.ok{background:var(--good-soft);color:var(--good)} .sync.bad{background:var(--bad-soft);color:var(--bad)}
+
+/* main */
+#view{padding-block:16px calc(92px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:20px;min-height:60vh}
+.muted{color:var(--muted)}
+.hello h1{font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1.15}
+.hello p{color:var(--muted)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.sec h2{font-family:var(--f-display);font-weight:700;font-size:19px}
+.sec .link{background:none;border:0;color:var(--accent);font-weight:600;padding:4px 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pad{padding:14px 16px}
+.note{font-size:14px;color:var(--muted)}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.banner span{min-width:0;flex:1 1 200px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.stat{padding:14px 16px;min-width:0}
+.stat + .stat{border-left:1px solid var(--line)}
+.stat small{display:block;font-size:12px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+.stat b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:21px;margin-top:2px}
+.stat b.bad{color:var(--bad)}
+@media (max-width:420px){.stat + .stat{border-left:0;border-top:1px solid var(--line)}}
+
+/* lists */
+.list{list-style:none;margin:0;padding:0}
+.li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li[role="button"]{cursor:pointer}
+.li[role="button"]:active{background:var(--surface-2)}
+.av{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:15px;grid-row:span 2}
+.av.off{background:var(--surface-2);color:var(--muted)}
+.nm{font-weight:600;overflow-wrap:anywhere}
+.sub{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.end{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+.acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;padding-top:8px;padding-left:52px}
+.empty-li{padding:18px 16px;color:var(--muted)}
+
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap;line-height:1.5}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-good{background:var(--good-soft);color:var(--good)} .p-info{background:var(--accent-soft);color:var(--accent)} .p-mute{background:var(--surface-2);color:var(--muted)}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:700;text-decoration:none;line-height:1.2}
+.btn.sm{min-height:36px;padding:5px 12px;font-size:14px;border-radius:9px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.wa{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:default}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar .grow{flex:1 1 180px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:5px 14px;min-height:36px;font-weight:600;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+input,select,textarea{width:100%;min-height:46px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:16px}
+textarea{min-height:130px;resize:vertical;font-family:var(--f-mono);font-size:14px;line-height:1.5}
+input[type="checkbox"]{width:22px;height:22px;min-height:0;accent-color:var(--accent)}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld label{font-weight:600;font-size:14px}
+.fld small{color:var(--muted);font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.form{display:flex;flex-direction:column;gap:14px}
+.form-err{color:var(--bad);font-weight:600;min-height:0}
+.form-warn{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px}
+.row-btns{display:flex;flex-wrap:wrap;gap:10px}
+.check{display:flex;align-items:center;gap:10px}
+
+/* days */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0 6px;text-align:center;font-weight:700;font-size:14px;position:relative}
+.day small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.day[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day[aria-pressed="true"] small{color:var(--accent-ink);opacity:.85}
+.day.today::after{content:"";position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--hl)}
+.slot{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 12px;padding:12px 14px;border-top:1px solid var(--line);align-items:start}
+.slot:first-child{border-top:0}
+.slot .tm{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted);line-height:1.5}
+.slot .tm b{display:block;color:var(--ink);font-weight:600}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:720px;max-height:92%;overflow:auto;background:var(--surface);color:var(--ink);border-radius:18px 18px 0 0;padding:6px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.sheet-h{position:sticky;top:0;background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px 4px;z-index:2}
+.sheet-h h2{font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.2;overflow-wrap:anywhere}
+.icon-btn{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--surface-2);font-size:24px;line-height:1}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:15px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;overflow-wrap:anywhere}
+.sh-sec h3{font-family:var(--f-display);font-weight:700;font-size:17px;margin-bottom:6px}
+.tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--line);font-size:15px}
+.tr:first-child{border-top:0}
+.marks-row{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid var(--line)}
+.marks-row:first-child{border-top:0}
+.marks-row input{text-align:right;font-family:var(--f-mono)}
+
+/* chart */
+.spark{width:100%;height:auto;display:block}
+.sv-grid{stroke:var(--line);stroke-width:1}
+.sv-pass{stroke:var(--bad);stroke-width:1;stroke-dasharray:4 4;opacity:.55}
+.sv-line{stroke:var(--accent);stroke-width:2.5;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.sv-dot{fill:var(--surface);stroke:var(--accent);stroke-width:2.5}
+.sv-dot.last{fill:var(--accent)}
+.sv-t{fill:var(--muted);font:11px var(--f-mono)}
+.sv-v{fill:var(--ink);font:600 12px var(--f-mono)}
+
+/* tabs + toast */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs-in{max-width:720px;margin-inline:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.tab{background:none;border:0;padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);min-height:56px}
+.tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-current="page"]{color:var(--accent)}
+.tab[aria-current="page"] span{box-shadow:inset 0 -3px 0 var(--hl)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:70;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){
+  .sheet{animation:up .18s ease-out}
+  @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="top-in wrap">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect class="l-paper" x="3" y="2" width="26" height="28" rx="5"/><line class="l-margin" x1="10" y1="3" x2="10" y2="29"/><path class="l-rule" d="M15 11h9M15 16h9M15 21h6"/></svg>
+      <div><b>Scholars Hub</b><span>Coaching manager</span></div>
+    </div>
+    <span class="sync" id="sync">Connecting</span>
+  </div>
+</header>
+<main class="wrap" id="view" aria-live="polite"></main>
+<nav class="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <button class="tab" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+    <button class="tab" data-tab="students"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.8"/><path d="M17 14.2c2.7.2 4.5 2.1 4.5 5.3"/></svg><span>Students</span></button>
+    <button class="tab" data-tab="fees"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12M6 9h12M9 4c4.5 0 6 2 6 5s-2.5 5-7 5l8 6"/></svg><span>Fees</span></button>
+    <button class="tab" data-tab="exams"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2.2 2.2L15.5 11"/></svg><span>Exams</span></button>
+    <button class="tab" data-tab="time"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span>Timetable</span></button>
+  </div>
+</nav>
+<div id="sheetRoot"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+const STANDALONE = !!document.querySelector('link[rel="manifest"]');
+const KEY = 'scholars_hub_v1';
+const COLS = ['students', 'pay', 'exams', 'slots'];
+const REMIND_DAYS = 3;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DOWL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const S = { students:{}, pay:{}, exams:{}, slots:{}, loaded:{}, booting:true, mode:'local', syncErr:false, dl:null,
+            tab:'home', day:null, q:'', cls:'All', ff:'act', sheet:null };
+let db = null, confirmFn = null, toastT = 0;
+const writeQ = {};
+const $ = s => document.querySelector(s);
+
+/* ---------- helpers ---------- */
+const pad = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const fromYmd = s => { const p = String(s).split('-').map(Number); return new Date(p[0], p[1] - 1, p[2] || 1); };
+const dayDiff = (a, b) => Math.round((a - b) / 864e5);
+const fmtD = d => d.getDate() + ' ' + MON[d.getMonth()];
+const fmtDY = d => d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+const monthIdx = s => { const d = fromYmd(s); return d.getFullYear() * 12 + d.getMonth(); };
+const dateOfIdx = (i, day) => { const y = Math.floor(i / 12), m = i % 12; const dim = new Date(y, m + 1, 0).getDate(); return new Date(y, m, Math.min(day, dim)); };
+const money = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const dayIdx = d => (d.getDay() + 6) % 7;
+const initials = n => String(n).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+const toMin = v => { const p = String(v || '0:0').split(':').map(Number); return p[0] * 60 + (p[1] || 0); };
+function fmtT(v) { if (!v) return ''; const p = v.split(':').map(Number); return (p[0] % 12 || 12) + ':' + pad(p[1] || 0) + ' ' + (p[0] >= 12 ? 'PM' : 'AM'); }
+const classes = () => [...new Set(Object.values(S.students).map(s => s.cls).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, {numeric:true}));
+const activeStudents = () => Object.values(S.students).filter(s => s.active !== false);
+const hasSample = () => COLS.some(c => Object.values(S[c]).some(d => d && d.sample));
+
+/* ---------- storage ---------- */
+function localSave() { try { localStorage.setItem(KEY, JSON.stringify({students:S.students, pay:S.pay, exams:S.exams, slots:S.slots})); } catch (e) {} }
+function localLoad() { try { const j = JSON.parse(localStorage.getItem(KEY) || 'null'); if (j) COLS.forEach(c => { S[c] = j[c] || {}; }); } catch (e) {} }
+function enqueue(key, fn) { const prev = writeQ[key] || Promise.resolve(); const p = prev.then(fn); writeQ[key] = p.catch(() => {}); return p; }
+async function put(c, id, obj, quiet) {
+  obj.id = id; S[c][id] = obj;
+  if (db) { try { await enqueue(c + '/' + id, () => db.collection(c).doc(id).set(clone(obj))); } catch (e) { toast('Could not save. Check your connection and try again.'); } }
+  else localSave();
+  if (!quiet) { render(); refreshSheet(); }
+}
+async function del(c, id, quiet) {
+  delete S[c][id];
+  if (db) { try { await enqueue(c + '/' + id, () => db.collection(c).doc(id).delete()); } catch (e) { toast('Could not delete. Try again.'); } }
+  else localSave();
+  if (!quiet) { render(); refreshSheet(); }
+}
+async function init() {
+  render();
+  let d = null, dl = null;
+  try { if (window.claude && window.claude.use) { [d, dl] = await Promise.all([window.claude.use('db'), window.claude.use('downloads')]); } } catch (e) { d = null; }
+  db = d || null; S.dl = dl || null;
+  if (!S.dl && STANDALONE) S.dl = localDownloader();
+  if (STANDALONE) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+  if (db) {
+    S.mode = 'db';
+    COLS.forEach(c => {
+      db.collection(c).onSnapshot(snap => {
+        const m = {}; snap.docs.forEach(x => { m[x.id] = x.data(); });
+        S[c] = m; S.loaded[c] = true; S.booting = false; render(); refreshSheet();
+      }, () => { S.loaded[c] = true; S.syncErr = true; S.booting = false; render(); });
+    });
+  } else {
+    S.mode = 'local'; localLoad(); COLS.forEach(c => { S.loaded[c] = true; }); S.booting = false; render();
+  }
+}
+
+/* ---------- fees ---------- */
+function feeInfo(s, t) {
+  const fee = +s.fee || 0, day = Math.min(28, Math.max(1, +s.dueDay || 1));
+  const items = (S.pay[s.id] && S.pay[s.id].items) || [];
+  const paidTotal = items.reduce((a, p) => a + (+p.amount || 0), 0);
+  const start = monthIdx(s.joined || ymd(t)), cur = t.getFullYear() * 12 + t.getMonth();
+  let rem = paidTotal; const months = [];
+  for (let i = start; i <= cur + 1; i++) {
+    const due = dateOfIdx(i, day), paid = Math.min(rem, fee); rem -= paid;
+    months.push({ i, due, fee, paid, out: fee - paid, label: MON[i % 12] + ' ' + Math.floor(i / 12) });
+  }
+  const owedMonths = months.filter(m => m.out > 0 && m.due <= t);
+  const owed = owedMonths.reduce((a, m) => a + m.out, 0);
+  const oldest = owedMonths[0] || null;
+  const next = months.find(m => m.out > 0 && m.due > t) || null;
+  let status = 'clear', days = 0;
+  if (owed > 0) { days = dayDiff(t, oldest.due); status = days > 0 ? 'overdue' : 'today'; }
+  else if (next) { const dd = dayDiff(next.due, t); if (dd <= REMIND_DAYS) { status = 'soon'; days = dd; } }
+  return { fee, paidTotal, months, owed, owedMonths, oldest, next, status, days, advance: rem,
+           amount: owed > 0 ? owed : (next ? next.out : 0), dueDate: owed > 0 ? oldest.due : (next ? next.due : null) };
+}
+function feeSort(a, b) {
+  const r = { overdue:0, today:1, soon:2, clear:3 };
+  return (r[a.f.status] - r[b.f.status]) || (a.f.status === 'overdue' ? b.f.days - a.f.days : a.f.days - b.f.days) || a.s.name.localeCompare(b.s.name);
+}
+function feePill(f) {
+  if (f.status === 'overdue') return '<span class="pill p-bad">Overdue ' + f.days + 'd</span>';
+  if (f.status === 'today') return '<span class="pill p-warn">Due today</span>';
+  if (f.status === 'soon') return '<span class="pill p-warn">' + (f.days === 1 ? 'Due tomorrow' : 'Due in ' + f.days + 'd') + '</span>';
+  return '<span class="pill p-good">' + (f.advance > 0 ? 'Advance paid' : 'Paid up') + '</span>';
+}
+function feeLine(f) {
+  if (f.status === 'overdue') return (f.owedMonths.length > 1 ? f.owedMonths.length + ' months, since ' : '') + f.oldest.label + ' · ' + f.days + (f.days === 1 ? ' day' : ' days') + ' late';
+  if (f.status === 'today') return f.oldest.label + ' fee is due today';
+  if (f.status === 'soon') return f.next.label + ' fee due ' + fmtD(f.dueDate);
+  const last = f.months.filter(m => m.out === 0 && m.fee > 0).pop();
+  return last ? 'Paid up to ' + last.label : 'No dues';
+}
+function feeMsg(s, f) {
+  const who = (s.parent || 'Parent').trim();
+  if (f.status === 'overdue' || f.status === 'today') {
+    const what = f.owedMonths.length > 1 ? f.owedMonths.length + ' mahine' : f.oldest.label;
+    const when = f.status === 'today' ? 'aaj due hai' : fmtD(f.oldest.due) + ' ko due thi';
+    return 'Namaste ' + who + ' ji, Scholars Hub se message. ' + s.name + ' ki ' + what + ' ki fee ' + money(f.owed) + ' baaki hai (' + when + '). Kripya jald jama kar dein. Dhanyavaad.';
+  }
+  if (f.status === 'soon') return 'Namaste ' + who + ' ji, yaad dilana tha ki ' + s.name + ' ki fee ' + money(f.amount) + ' ' + fmtD(f.dueDate) + ' ko due hai. Dhanyavaad. Scholars Hub';
+  return '';
+}
+function waNum(p) { let d = String(p || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '0') d = d.slice(1); if (d.length === 10) d = '91' + d; return d.length >= 11 ? d : ''; }
+function waBtn(s, msg, label) {
+  const n = waNum(s.phone);
+  return n ? '<a class="btn sm wa" href="https://wa.me/' + n + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + (label || 'WhatsApp') + '</a>'
+           : '<button class="btn sm ghost" data-act="copymsg" data-msg="' + esc(msg) + '">Copy message</button>';
+}
+
+/* ---------- exams / performance ---------- */
+function results(sid) {
+  return Object.values(S.exams).filter(e => e.marks && e.marks[sid] != null && e.marks[sid] !== '' && +e.max > 0)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
+    .map(e => ({ e, marks: +e.marks[sid], pct: +e.marks[sid] / +e.max * 100 }));
+}
+function perf(sid) {
+  const r = results(sid);
+  if (!r.length) return { state:'none', r };
+  const last = r[r.length - 1].pct;
+  if (r.length === 1) return { state:'new', last, delta:0, r };
+  const prior = r.slice(Math.max(0, r.length - 4), r.length - 1);
+  const base = prior.reduce((a, x) => a + x.pct, 0) / prior.length, delta = last - base;
+  return { state: delta >= 5 ? 'up' : delta <= -5 ? 'down' : 'flat', last, delta, base, r };
+}
+function trendPill(p) {
+  if (p.state === 'none') return '<span class="pill p-mute">No exams yet</span>';
+  if (p.state === 'new') return '<span class="pill p-info">' + Math.round(p.last) + '% · first test</span>';
+  if (p.state === 'up') return '<span class="pill p-good">↑ Improving +' + Math.round(p.delta) + '%</span>';
+  if (p.state === 'down') return '<span class="pill p-bad">↓ Dropping −' + Math.round(Math.abs(p.delta)) + '%</span>';
+  return '<span class="pill p-mute">→ Steady</span>';
+}
+function spark(r) {
+  const W = 320, H = 118, L = 32, R = 18, T = 20, B = 26, n = r.length;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (n - 1);
+  const y = v => T + (100 - Math.max(0, Math.min(100, v))) / 100 * (H - T - B);
+  let g = '';
+  [0, 50, 100].forEach(v => { g += '<line class="sv-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text class="sv-t" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>'; });
+  g += '<line class="sv-pass" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(40) + '" y2="' + y(40) + '"/>';
+  const pts = r.map((q, i) => x(i).toFixed(1) + ',' + y(q.pct).toFixed(1)).join(' ');
+  let m = n > 1 ? '<polyline class="sv-line" points="' + pts + '"/>' : '';
+  r.forEach((q, i) => {
+    const last = i === n - 1;
+    m += '<circle class="sv-dot' + (last ? ' last' : '') + '" cx="' + x(i).toFixed(1) + '" cy="' + y(q.pct).toFixed(1) + '" r="4.5"/>';
+    if (last || n <= 4) m += '<text class="sv-v" x="' + x(i).toFixed(1) + '" y="' + (y(q.pct) - 9).toFixed(1) + '" text-anchor="middle">' + Math.round(q.pct) + '</text>';
+    if (n <= 5 || i === 0 || last) m += '<text class="sv-t" x="' + x(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + fmtD(fromYmd(q.e.date)) + '</text>';
+  });
+  return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Exam percentage over time">' + g + m + '</svg>';
+}
+
+/* ---------- timetable ---------- */
+const slotsOn = d => Object.values(S.slots).filter(s => +s.day === d).sort((a, b) => toMin(a.start) - toMin(b.start));
+function slotConflicts(sl) {
+  return Object.values(S.slots).filter(o => o.id !== sl.id && +o.day === +sl.day && toMin(sl.start) < toMin(o.end) && toMin(sl.end) > toMin(o.start) &&
+    ((sl.cls && o.cls === sl.cls) || (sl.teacher && o.teacher && o.teacher.toLowerCase() === sl.teacher.toLowerCase())));
+}
+
+/* ---------- views ---------- */
+function ready() { return !S.booting && COLS.every(c => S.loaded[c]); }
+function render() {
+  const act = document.activeElement;
+  const keep = act && act.id && $('#view').contains(act) ? { id: act.id, s: act.selectionStart, e: act.selectionEnd } : null;
+  document.querySelectorAll('.tab').forEach(b => { if (b.dataset.tab === S.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  const sy = $('#sync');
+  if (S.booting) { sy.className = 'sync'; sy.textContent = 'Connecting'; }
+  else if (S.syncErr) { sy.className = 'sync bad'; sy.textContent = 'Offline'; }
+  else if (S.mode === 'db') { sy.className = 'sync ok'; sy.textContent = 'Saved to account'; }
+  else { sy.className = 'sync'; sy.textContent = 'This device only'; }
+  const v = $('#view');
+  if (!ready()) { v.innerHTML = '<div class="panel pad"><p class="muted">Loading your records…</p></div>'; return; }
+  const fn = { home: vHome, students: vStudents, fees: vFees, exams: vExams, time: vTime }[S.tab] || vHome;
+  v.innerHTML = fn();
+  if (keep) { const el = document.getElementById(keep.id); if (el) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch (e) {} } }
+}
+
+function studentRow(x, mode) {
+  const s = x.s, f = x.f, p = x.p;
+  const off = s.active === false;
+  return '<li class="li" role="button" tabindex="0" data-act="open-student" data-id="' + esc(s.id) + '">' +
+    '<span class="av' + (off ? ' off' : '') + '">' + esc(initials(s.name)) + '</span>' +
+    '<span class="main"><span class="nm">' + esc(s.name) + '</span></span>' +
+    '<span class="end">' + (off ? '<span class="pill p-mute">Left</span>' : feePill(f)) + '</span>' +
+    '<span class="sub">' + esc(s.cls) + (s.parent ? ' · ' + esc(s.parent) : '') + '</span>' +
+    '<span class="end">' + (off ? '' : trendPill(p)) + '</span></li>';
+}
+function feeRow(x) {
+  const s = x.s, f = x.f, msg = feeMsg(s, f);
+  const amt = f.status === 'clear' ? '' : '<span class="amt">' + money(f.amount) + '</span>';
+  return '<li class="li">' +
+    '<span class="av">' + esc(initials(s.name)) + '</span>' +
+    '<span class="main"><button class="nm" style="background:none;border:0;padding:0;text-align:left" data-act="open-student" data-id="' + esc(s.id) + '">' + esc(s.name) + '</button></span>' +
+    '<span class="end">' + amt + '</span>' +
+    '<span class="sub">' + esc(s.cls) + ' · ' + esc(feeLine(f)) + '</span>' +
+    '<span class="end">' + feePill(f) + '</span>' +
+    '<div class="acts">' + (msg ? waBtn(s, msg) : '') +
+    '<button class="btn sm ' + (msg ? 'ghost' : '') + '" data-act="pay" data-id="' + esc(s.id) + '">Record payment</button></div></li>';
+}
+function perfRow(x) {
+  return '<li class="li" role="button" tabindex="0" data-act="open-student" data-id="' + esc(x.s.id) + '">' +
+    '<span class="av">' + esc(initials(x.s.name)) + '</span><span class="main"><span class="nm">' + esc(x.s.name) + '</span></span>' +
+    '<span class="end"><span class="amt">' + Math.round(x.p.last) + '%</span></span>' +
+    '<span class="sub">' + esc(x.s.cls) + '</span><span class="end">' + trendPill(x.p) + '</span></li>';
+}
+
+function homeEmpty() {
+  return '<div class="hello"><h1>Namaste</h1><p>Welcome to Scholars Hub.</p></div>' +
+    '<div class="panel pad" style="display:flex;flex-direction:column;gap:12px">' +
+    '<h2 style="font-family:var(--f-display);font-size:20px">Start with your students</h2>' +
+    '<p class="muted">Add students one by one or paste a list from your register. Fee reminders, exam trends and the weekly timetable all build on that list.</p>' +
+    '<div class="row-btns"><button class="btn" data-act="add-student">Add a student</button><button class="btn ghost" data-act="import">Paste a list</button></div>' +
+    '<p class="note">Want to look around first? <button class="link" style="background:none;border:0;color:var(--accent);font-weight:700;padding:0" data-act="sample">Load sample data</button>. You can remove it in one tap.</p></div>';
+}
+function vHome() {
+  if (!Object.keys(S.students).length) return homeEmpty();
+  const t = today(), X = activeStudents().map(s => ({ s, f: feeInfo(s, t), p: perf(s.id) }));
+  const pending = X.reduce((a, x) => a + x.f.owed, 0);
+  const late = X.filter(x => x.f.status === 'overdue' || x.f.status === 'today').length;
+  const mk = ymd(t).slice(0, 7);
+  const collected = Object.values(S.pay).reduce((a, d) => a + (d.items || []).filter(i => String(i.date).startsWith(mk)).reduce((b, i) => b + (+i.amount || 0), 0), 0);
+  const rem = X.filter(x => x.f.status !== 'clear').sort(feeSort);
+  const att = X.filter(x => x.p.state === 'down' || (x.p.state !== 'none' && x.p.last < 40)).sort((a, b) => a.p.delta - b.p.delta);
+  const well = X.filter(x => !att.includes(x) && (x.p.state === 'up' || (x.p.state !== 'none' && x.p.last >= 80))).sort((a, b) => b.p.delta - a.p.delta);
+  const exams = Object.keys(S.exams).length;
+  const ts = slotsOn(dayIdx(t)), nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  let nextMarked = false;
+  const slotRows = ts.map(sl => {
+    let tag = '';
+    if (nowM >= toMin(sl.start) && nowM < toMin(sl.end)) tag = '<span class="pill p-good">Now</span>';
+    else if (nowM < toMin(sl.start) && !nextMarked) { tag = '<span class="pill p-info">Next</span>'; nextMarked = true; }
+    return slotHtml(sl, tag);
+  }).join('');
+  let h = '<div class="hello"><h1>' + DOWL[dayIdx(t)] + ', ' + fmtD(t) + '</h1><p>' + (late ? late + (late === 1 ? ' student has' : ' students have') + ' fees pending today.' : 'No fees pending today.') + '</p></div>';
+  if (hasSample()) h += '<div class="banner"><span>Sample data is loaded. Remove it before you start entering your own records.</span><button class="btn sm" data-act="rm-sample">Remove sample data</button></div>';
+  h += '<div class="panel stats"><div class="stat"><small>To collect</small><b' + (pending ? ' class="bad"' : '') + '>' + money(pending) + '</b></div>' +
+       '<div class="stat"><small>Overdue</small><b>' + late + '</b></div>' +
+       '<div class="stat"><small>Collected in ' + MON[t.getMonth()] + '</small><b>' + money(collected) + '</b></div></div>';
+  h += '<section><div class="sec"><h2>Fee reminders</h2><button class="link" data-act="goto" data-tab="fees">All fees</button></div><div class="panel"><ul class="list">' +
+       (rem.length ? rem.slice(0, 5).map(feeRow).join('') : '<li class="empty-li">Nothing due in the next ' + REMIND_DAYS + ' days.</li>') + '</ul></div></section>';
+  h += '<section><div class="sec"><h2>Needs attention</h2></div><div class="panel"><ul class="list">' +
+       (exams ? (att.length ? att.slice(0, 4).map(perfRow).join('') : '<li class="empty-li">Nobody is dropping right now.</li>') : '<li class="empty-li">Add an exam and enter marks to see who is dropping.</li>') + '</ul></div></section>';
+  if (well.length) h += '<section><div class="sec"><h2>Doing well</h2></div><div class="panel"><ul class="list">' + well.slice(0, 4).map(perfRow).join('') + '</ul></div></section>';
+  h += '<section><div class="sec"><h2>Today’s classes</h2><button class="link" data-act="goto" data-tab="time">Timetable</button></div><div class="panel">' +
+       (ts.length ? slotRows : '<div class="empty-li">No classes scheduled for today.</div>') + '</div></section>';
+  h += '<section><div class="sec"><h2>Backup and export</h2></div><div class="panel pad" style="display:flex;flex-direction:column;gap:10px">' +
+       '<div class="row-btns">' + (S.dl ? '<button class="btn sm ghost" data-act="export-csv">Fee sheet (CSV)</button><button class="btn sm ghost" data-act="export-json">Backup (JSON)</button>' : '') + '<button class="btn sm ghost" data-act="restore">Restore backup</button></div>' +
+       '<p class="note">' + (S.mode === 'db' ? 'Your records are saved to your Claude account. Keep this page’s link private, because it holds student details.' : (STANDALONE ? 'Your records are stored on this phone only. Download a backup now and then, so you can restore it if the phone is reset.' : 'Your records are stored in this browser only. Open this page while signed in to Claude to keep them in your account.')) + '</p></div></section>';
+  return h;
+}
+
+function vStudents() {
+  const t = today(), q = S.q.trim().toLowerCase();
+  const all = Object.values(S.students).sort((a, b) => ((a.active === false) - (b.active === false)) || a.name.localeCompare(b.name));
+  const cl = classes();
+  const list = all.filter(s => (S.cls === 'All' || s.cls === S.cls) && (!q || (s.name + ' ' + s.parent + ' ' + s.phone).toLowerCase().includes(q)));
+  return '<div class="toolbar"><div class="fld grow"><label for="q" class="muted">Search</label><input id="q" type="search" placeholder="Name or phone" value="' + esc(S.q) + '" autocomplete="off"></div></div>' +
+    '<div class="chips">' + ['All'].concat(cl).map(c => '<button class="chip" data-act="fcls" data-v="' + esc(c) + '" aria-pressed="' + (S.cls === c) + '">' + esc(c) + '</button>').join('') + '</div>' +
+    '<div class="row-btns"><button class="btn" data-act="add-student">Add student</button><button class="btn ghost" data-act="import">Paste a list</button></div>' +
+    '<div class="panel"><ul class="list">' + (list.length ? list.map(s => studentRow({ s, f: feeInfo(s, t), p: perf(s.id) })).join('') : '<li class="empty-li">' + (all.length ? 'No student matches this search.' : 'No students yet. Add the first one above.') + '</li>') + '</ul></div>' +
+    '<p class="note">' + all.filter(s => s.active !== false).length + ' active · ' + all.filter(s => s.active === false).length + ' left</p>';
+}
+
+function vFees() {
+  const t = today();
+  const X = activeStudents().map(s => ({ s, f: feeInfo(s, t) })).sort(feeSort);
+  const pending = X.reduce((a, x) => a + x.f.owed, 0);
+  const over = X.filter(x => x.f.status === 'overdue').length;
+  const flt = { act: x => x.f.status !== 'clear', over: x => x.f.status === 'overdue' || x.f.status === 'today', clear: x => x.f.status === 'clear', all: () => true }[S.ff];
+  const rows = X.filter(flt);
+  const opts = [['act', 'To collect'], ['over', 'Overdue'], ['clear', 'Paid up'], ['all', 'Everyone']];
+  return '<div class="panel stats"><div class="stat"><small>Pending</small><b' + (pending ? ' class="bad"' : '') + '>' + money(pending) + '</b></div><div class="stat"><small>Overdue</small><b>' + over + '</b></div><div class="stat"><small>Due soon</small><b>' + X.filter(x => x.f.status === 'soon').length + '</b></div></div>' +
+    '<div class="chips">' + opts.map(o => '<button class="chip" data-act="fff" data-v="' + o[0] + '" aria-pressed="' + (S.ff === o[0]) + '">' + o[1] + '</button>').join('') + '</div>' +
+    '<div class="panel"><ul class="list">' + (rows.length ? rows.map(feeRow).join('') : '<li class="empty-li">' + (X.length ? 'Nobody in this list.' : 'Add students to start tracking fees.') + '</li>') + '</ul></div>' +
+    '<p class="note">Fees are counted month by month from each student’s joining month. A payment clears the oldest unpaid month first. Reminders start ' + REMIND_DAYS + ' days before the due date.</p>';
+}
+
+function vExams() {
+  const ex = Object.values(S.exams).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  const rows = ex.map(e => {
+    const vals = Object.values(e.marks || {}).filter(v => v !== '' && v != null).map(Number);
+    const avg = vals.length && +e.max > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length / +e.max * 100 : null;
+    return '<li class="li" role="button" tabindex="0" data-act="open-marks" data-id="' + esc(e.id) + '">' +
+      '<span class="av" style="border-radius:12px">' + esc((e.subject || e.name || '?').slice(0, 2).toUpperCase()) + '</span>' +
+      '<span class="main"><span class="nm">' + esc(e.name) + '</span></span>' +
+      '<span class="end"><span class="amt">' + (avg == null ? '–' : Math.round(avg) + '%') + '</span></span>' +
+      '<span class="sub">' + esc([e.subject, e.cls || 'All classes', fmtD(fromYmd(e.date))].filter(Boolean).join(' · ')) + '</span>' +
+      '<span class="end"><span class="pill ' + (vals.length ? 'p-info' : 'p-warn') + '">' + vals.length + ' marks entered</span></span></li>';
+  }).join('');
+  return '<div class="row-btns"><button class="btn" data-act="add-exam">New exam</button></div>' +
+    '<div class="panel"><ul class="list">' + (rows || '<li class="empty-li">No exams yet. Create one, then enter each student’s marks. Trends show up after two exams.</li>') + '</ul></div>';
+}
+
+function slotHtml(sl, tag) {
+  return '<div class="slot" role="button" tabindex="0" data-act="edit-slot" data-id="' + esc(sl.id) + '" style="cursor:pointer">' +
+    '<div class="tm"><b>' + fmtT(sl.start) + '</b>' + fmtT(sl.end) + '</div>' +
+    '<div><div class="nm">' + esc(sl.subject) + ' ' + (tag || '') + '</div><div class="sub">' + esc([sl.cls, sl.teacher, sl.room].filter(Boolean).join(' · ')) + '</div></div></div>';
+}
+function vTime() {
+  const td = dayIdx(today());
+  if (S.day == null) S.day = td;
+  const list = slotsOn(S.day);
+  return '<div class="days">' + DOW.map((d, i) => '<button class="day' + (i === td ? ' today' : '') + '" data-act="day" data-v="' + i + '" aria-pressed="' + (S.day === i) + '">' + d + '<small>' + slotsOn(i).length + '</small></button>').join('') + '</div>' +
+    '<div class="row-btns"><button class="btn" data-act="add-slot">Add class</button></div>' +
+    '<section><div class="sec"><h2>' + DOWL[S.day] + '</h2><span class="muted">' + list.length + (list.length === 1 ? ' class' : ' classes') + '</span></div><div class="panel">' +
+    (list.length ? list.map(sl => slotHtml(sl)).join('') : '<div class="empty-li">No classes on ' + DOWL[S.day] + '. Tap “Add class” to schedule one.</div>') + '</div></section>';
+}
+
+/* ---------- sheets ---------- */
+function shell(title, body) { return '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><div class="sheet-h"><h2>' + esc(title) + '</h2><button class="icon-btn" data-act="close" aria-label="Close">×</button></div>' + body + '</div>'; }
+function showSheet(html, meta) {
+  S.sheet = meta || { kind: 'form' };
+  $('#sheetRoot').innerHTML = '<div class="scrim" data-act="scrim">' + html + '</div>';
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() { S.sheet = null; confirmFn = null; $('#sheetRoot').innerHTML = ''; document.body.style.overflow = ''; }
+function focusFirst() { const el = document.querySelector('.sheet input:not([type=checkbox]),.sheet textarea,.sheet select'); if (el) el.focus(); }
+function refreshSheet() {
+  if (!S.sheet || S.sheet.kind !== 'student') return;
+  if (!S.students[S.sheet.id]) { closeSheet(); return; }
+  const old = document.querySelector('.sheet'), top = old ? old.scrollTop : 0;
+  showSheet(studentSheet(S.sheet.id), S.sheet);
+  const nw = document.querySelector('.sheet'); if (nw) nw.scrollTop = top;
+}
+const fld = (id, label, ctl, hint) => '<div class="fld"><label for="' + id + '">' + label + '</label>' + ctl + (hint ? '<small>' + hint + '</small>' : '') + '</div>';
+function back(spec) { if (spec && spec.indexOf('student:') === 0) openStudent(spec.slice(8)); else closeSheet(); }
+function ask(msg, yes, fn, backSpec) {
+  confirmFn = fn;
+  showSheet(shell('Please confirm', '<p>' + esc(msg) + '</p><div class="row-btns"><button class="btn danger" data-act="confirm-yes">' + esc(yes) + '</button><button class="btn ghost" data-act="cancel-form" data-back="' + esc(backSpec || '') + '">Cancel</button></div>'));
+}
+
+function openStudent(id) { if (!S.students[id]) return; showSheet(studentSheet(id), { kind: 'student', id }); }
+function studentSheet(id) {
+  const s = S.students[id], t = today(), f = feeInfo(s, t), p = perf(id);
+  const msg = feeMsg(s, f), num = waNum(s.phone);
+  const pays = ((S.pay[id] && S.pay[id].items) || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+  const led = f.months.slice(-12).reverse().map(m => {
+    const st = m.out === 0 ? '<span class="pill p-good">Paid</span>' : m.due > t ? '<span class="pill p-mute">Upcoming</span>' : m.paid > 0 ? '<span class="pill p-warn">Part paid</span>' : '<span class="pill p-bad">Pending</span>';
+    return '<div class="tr"><span>' + m.label + ' <span class="muted">· due ' + fmtD(m.due) + '</span></span><span class="amt">' + (m.out === 0 ? money(m.fee) : money(m.out) + ' left') + '</span>' + st + '</div>';
+  }).join('');
+  const payRows = pays.map(p2 => '<div class="tr"><span>' + fmtDY(fromYmd(p2.date)) + ' <span class="muted">· ' + esc(p2.mode || 'Cash') + '</span></span><span class="amt">' + money(p2.amount) + '</span><span style="display:flex;gap:6px">' +
+    waBtn(s, s.name + ' ki ' + money(p2.amount) + ' fee ' + fmtD(fromYmd(p2.date)) + ' ko mili. Dhanyavaad. Scholars Hub', 'Receipt').replace('btn sm wa', 'btn sm ghost') +
+    '<button class="btn sm danger" data-act="del-pay" data-id="' + esc(id) + '" data-pid="' + esc(p2.id) + '" aria-label="Delete payment">×</button></span></div>').join('');
+  const exRows = p.r.slice().reverse().map(r => '<div class="tr"><span>' + esc(r.e.name) + ' <span class="muted">· ' + fmtD(fromYmd(r.e.date)) + '</span></span><span class="amt">' + r.marks + '/' + r.e.max + '</span><span class="pill ' + (r.pct >= 60 ? 'p-good' : r.pct >= 40 ? 'p-warn' : 'p-bad') + '">' + Math.round(r.pct) + '%</span></div>').join('');
+  return shell(s.name,
+    '<div style="display:flex;flex-wrap:wrap;gap:8px">' + (s.active === false ? '<span class="pill p-mute">Left</span>' : feePill(f) + trendPill(p)) + '</div>' +
+    '<dl class="kv"><dt>Class</dt><dd>' + esc(s.cls) + '</dd><dt>Parent</dt><dd>' + esc(s.parent || '–') + '</dd><dt>Phone</dt><dd>' + esc(s.phone || '–') + '</dd><dt>Monthly fee</dt><dd class="amt">' + money(s.fee) + ' <span class="muted" style="font-family:var(--f-body);font-weight:400">due on the ' + s.dueDay + ' of each month</span></dd><dt>Joined</dt><dd>' + fmtDY(fromYmd(s.joined)) + '</dd>' + (s.note ? '<dt>Note</dt><dd>' + esc(s.note) + '</dd>' : '') + '</dl>' +
+    '<div class="row-btns">' + (msg ? waBtn(s, msg, 'Remind on WhatsApp') : '') + '<button class="btn' + (msg ? ' ghost' : '') + '" data-act="pay" data-id="' + esc(id) + '">Record payment</button>' + (num ? '<button class="btn ghost" data-act="copymsg" data-msg="' + esc(s.phone) + '">Copy number</button>' : '') + '</div>' +
+    '<div class="sh-sec"><h3>Fee ledger</h3><div class="tbl">' + (led || '<div class="tr"><span class="muted">Fee tracking starts on ' + fmtDY(fromYmd(s.joined)) + '.</span></div>') + '</div>' + (f.advance > 0 ? '<p class="note" style="margin-top:6px">Advance paid: ' + money(f.advance) + '</p>' : '') + '</div>' +
+    '<div class="sh-sec"><h3>Payments</h3><div class="tbl">' + (payRows || '<div class="tr"><span class="muted">No payments recorded.</span></div>') + '</div></div>' +
+    '<div class="sh-sec"><h3>Exam results</h3>' + (p.r.length ? '<div class="panel pad" style="margin-bottom:8px">' + spark(p.r) + '</div><div class="tbl">' + exRows + '</div>' : '<p class="muted">No marks entered yet.</p>') + '</div>' +
+    '<div class="row-btns"><button class="btn ghost" data-act="edit-student" data-id="' + esc(id) + '">Edit details</button><button class="btn danger" data-act="del-student" data-id="' + esc(id) + '">Delete student</button></div>');
+}
+
+function studentForm(id) {
+  const s = id ? S.students[id] : null, v = (k, d) => esc(s && s[k] != null ? s[k] : (d || ''));
+  return shell(s ? 'Edit student' : 'Add student',
+    '<form class="form" data-form="student" data-id="' + esc(id || '') + '" novalidate>' +
+    fld('f-name', 'Student name', '<input id="f-name" name="name" autocomplete="off" required value="' + v('name') + '">') +
+    fld('f-cls', 'Class or batch', '<input id="f-cls" name="cls" list="clsList" autocomplete="off" required placeholder="e.g. Class 9" value="' + v('cls') + '"><datalist id="clsList">' + classes().map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>') +
+    '<div class="grid2">' + fld('f-parent', 'Parent name', '<input id="f-parent" name="parent" autocomplete="off" value="' + v('parent') + '">') + fld('f-phone', 'Parent phone', '<input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="10-digit mobile" value="' + v('phone') + '">') + '</div>' +
+    '<div class="grid2">' + fld('f-fee', 'Monthly fee (₹)', '<input id="f-fee" name="fee" type="number" inputmode="numeric" min="0" step="50" required value="' + v('fee') + '">') + fld('f-due', 'Fee due day', '<input id="f-due" name="dueDay" type="number" inputmode="numeric" min="1" max="28" placeholder="Joining day" value="' + v('dueDay') + '">', 'Day of month, 1 to 28') + '</div>' +
+    fld('f-joined', 'Joining date', '<input id="f-joined" name="joined" type="date" value="' + v('joined', ymd(today())) + '">', 'Fees are counted from this month.') +
+    fld('f-note', 'Note', '<input id="f-note" name="note" autocomplete="off" value="' + v('note') + '">') +
+    (s ? '<label class="check"><input id="f-active" name="active" type="checkbox"' + (s.active === false ? '' : ' checked') + '> Still attending</label>' : '') +
+    '<div class="form-err" role="alert"></div><div class="row-btns"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" data-act="cancel-form" data-back="' + (id ? 'student:' + esc(id) : '') + '">Cancel</button></div></form>');
+}
+function importForm() {
+  const t = today();
+  return shell('Paste a list',
+    '<form class="form" data-form="import" novalidate><p class="muted">One student per line: <b>Name, Class, Phone, Monthly fee</b>. Copy it from Excel or type it.</p>' +
+    fld('i-text', 'Students', '<textarea id="i-text" name="text" placeholder="Aarav Sharma, Class 10, 9876543210, 2000&#10;Diya Verma, Class 9, 9876501234, 1500"></textarea>') +
+    '<div class="grid2">' + fld('i-from', 'Fees count from', '<input id="i-from" name="from" type="month" value="' + t.getFullYear() + '-' + pad(t.getMonth() + 1) + '">') + fld('i-due', 'Fee due day', '<input id="i-due" name="dueDay" type="number" inputmode="numeric" min="1" max="28" value="5">') + '</div>' +
+    fld('i-fee', 'Fee to use when a line has none (₹)', '<input id="i-fee" name="fee" type="number" inputmode="numeric" min="0" step="50" placeholder="optional">') +
+    '<div class="form-err" role="alert"></div><div class="row-btns"><button class="btn" type="submit">Add students</button><button class="btn ghost" type="button" data-act="cancel-form">Cancel</button></div></form>');
+}
+function payForm(id) {
+  const s = S.students[id], f = feeInfo(s, today()), def = f.owed > 0 ? f.owed : (f.next ? f.next.out : f.fee);
+  return shell('Record payment',
+    '<p><b>' + esc(s.name) + '</b> · ' + esc(s.cls) + '</p><p class="muted">' + (f.owed > 0 ? 'Pending now: ' + money(f.owed) : 'No dues right now.') + '</p>' +
+    '<form class="form" data-form="pay" data-id="' + esc(id) + '" novalidate>' +
+    '<div class="grid2">' + fld('p-amt', 'Amount received (₹)', '<input id="p-amt" name="amount" type="number" inputmode="numeric" min="1" step="1" required value="' + Math.round(def) + '">') + fld('p-date', 'Date', '<input id="p-date" name="date" type="date" value="' + ymd(today()) + '">') + '</div>' +
+    fld('p-mode', 'Paid by', '<select id="p-mode" name="mode"><option>Cash</option><option>UPI</option><option>Bank transfer</option><option>Cheque</option><option>Other</option></select>') +
+    '<div class="form-err" role="alert"></div><div class="row-btns"><button class="btn" type="submit">Save payment</button><button class="btn ghost" type="button" data-act="cancel-form" data-back="student:' + esc(id) + '">Cancel</button></div></form>');
+}
+function examForm(id) {
+  const e = id ? S.exams[id] : null, v = (k, d) => esc(e && e[k] != null ? e[k] : (d || ''));
+  const cl = classes();
+  return shell(e ? 'Edit exam' : 'New exam',
+    '<form class="form" data-form="exam" data-id="' + esc(id || '') + '" novalidate>' +
+    fld('e-name', 'Exam name', '<input id="e-name" name="name" autocomplete="off" required placeholder="e.g. Unit Test 2" value="' + v('name') + '">') +
+    '<div class="grid2">' + fld('e-sub', 'Subject', '<input id="e-sub" name="subject" autocomplete="off" placeholder="e.g. Maths" value="' + v('subject') + '">') +
+    fld('e-cls', 'For', '<select id="e-cls" name="cls"><option value="">All classes</option>' + cl.map(c => '<option' + (e && e.cls === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>') + '</div>' +
+    '<div class="grid2">' + fld('e-date', 'Date', '<input id="e-date" name="date" type="date" value="' + v('date', ymd(today())) + '">') + fld('e-max', 'Maximum marks', '<input id="e-max" name="max" type="number" inputmode="numeric" min="1" required value="' + v('max', '100') + '">') + '</div>' +
+    '<div class="form-err" role="alert"></div><div class="row-btns"><button class="btn" type="submit">' + (e ? 'Save' : 'Create and enter marks') + '</button><button class="btn ghost" type="button" data-act="cancel-form">Cancel</button>' +
+    (e ? '<button class="btn danger" type="button" data-act="del-exam" data-id="' + esc(id) + '">Delete exam</button>' : '') + '</div></form>');
+}
+function marksSheet(id) {
+  const e = S.exams[id]; if (!e) return;
+  const st = Object.values(S.students).filter(s => s.active !== false && (!e.cls || s.cls === e.cls)).sort((a, b) => a.name.localeCompare(b.name));
+  const rows = st.map(s => '<div class="marks-row"><label for="m-' + esc(s.id) + '"><span class="nm">' + esc(s.name) + '</span><br><span class="sub">' + esc(s.cls) + '</span></label><input id="m-' + esc(s.id) + '" name="' + esc(s.id) + '" type="number" inputmode="decimal" min="0" max="' + e.max + '" step="0.5" placeholder="/ ' + e.max + '" value="' + (e.marks && e.marks[s.id] != null ? esc(e.marks[s.id]) : '') + '"></div>').join('');
+  showSheet(shell(e.name, '<p class="muted">' + esc([e.subject, e.cls || 'All classes', fmtDY(fromYmd(e.date))].filter(Boolean).join(' · ')) + ' · out of ' + e.max + '. Leave blank if absent.</p>' +
+    '<form class="form" data-form="marks" data-id="' + esc(id) + '" novalidate><div class="tbl">' + (rows || '<div class="tr"><span class="muted">No students in this class yet.</span></div>') + '</div>' +
+    '<div class="form-err" role="alert"></div><div class="row-btns"><button class="btn" type="submit">Save marks</button><button class="btn ghost" type="button" data-act="edit-exam" data-id="' + esc(id) + '">Edit exam</button><button class="btn ghost" type="button" data-act="close">Close</button></div></form>'));
+  focusFirst();
+}
+function slotForm(id) {
+  const sl = id ? S.slots[id] : null, v = (k, d) => esc(sl && sl[k] != null ? sl[k] : (d || ''));
+  const dsel = sl ? +sl.day : (S.day != null ? S.day : dayIdx(today()));
+  return shell(sl ? 'Edit class' : 'Add class',
+    '<form class="form" data-form="slot" data-id="' + esc(id || '') + '" novalidate>' +
+    fld('s-day', 'Day', '<select id="s-day" name="day">' + DOWL.map((d, i) => '<option value="' + i + '"' + (i === dsel ? ' selected' : '') + '>' + d + '</option>').join('') + '</select>') +
+    '<div class="grid2">' + fld('s-start', 'Starts', '<input id="s-start" name="start" type="time" required value="' + v('start', '16:00') + '">') + fld('s-end', 'Ends', '<input id="s-end" name="end" type="time" required value="' + v('end', '17:00') + '">') + '</div>' +
+    fld('s-sub', 'Subject', '<input id="s-sub" name="subject" autocomplete="off" required placeholder="e.g. Maths" value="' + v('subject') + '">') +
+    fld('s-cls', 'Class or batch', '<input id="s-cls" name="cls" list="clsList2" autocomplete="off" value="' + v('cls') + '"><datalist id="clsList2">' + classes().map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>') +
+    '<div class="grid2">' + fld('s-teach', 'Teacher', '<input id="s-teach" name="teacher" autocomplete="off" value="' + v('teacher') + '">') + fld('s-room', 'Room', '<input id="s-room" name="room" autocomplete="off" value="' + v('room') + '">') + '</div>' +
+    '<div class="form-warn" hidden></div><div class="form-err" role="alert"></div>' +
+    '<div class="row-btns"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" data-act="cancel-form">Cancel</button>' + (sl ? '<button class="btn danger" type="button" data-act="del-slot" data-id="' + esc(id) + '">Delete</button>' : '') + '</div></form>');
+}
+
+/* ---------- form handlers ---------- */
+function ferr(form, msg) { const el = form.querySelector('.form-err'); if (el) el.textContent = msg; }
+async function submitForm(form) {
+  const f = new FormData(form), kind = form.dataset.form, id = form.dataset.id || '';
+  const g = k => String(f.get(k) == null ? '' : f.get(k)).trim();
+  if (kind === 'student') {
+    const name = g('name'), cls = g('cls'), fee = parseFloat(g('fee'));
+    if (!name || !cls || !(fee >= 0)) return ferr(form, 'Enter the student’s name, class and monthly fee.');
+    const joined = g('joined') || ymd(today());
+    let dd = parseInt(g('dueDay'), 10); if (!(dd >= 1 && dd <= 28)) dd = Math.min(28, fromYmd(joined).getDate());
+    const nid = id || uid();
+    const obj = Object.assign(S.students[nid] ? clone(S.students[nid]) : {}, { name, cls, parent: g('parent'), phone: g('phone'), fee, joined, dueDay: dd, note: g('note'), active: id ? !!f.get('active') : true });
+    await put('students', nid, obj);
+    toast('Saved'); if (id) openStudent(nid); else closeSheet();
+  } else if (kind === 'import') {
+    const defFee = parseFloat(g('fee')), from = g('from') || ymd(today()).slice(0, 7), dd = Math.min(28, Math.max(1, parseInt(g('dueDay'), 10) || 5));
+    const rows = g('text').split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => { const p = l.split(/\t|,/).map(x => x.trim()); return { name: p[0], cls: p[1] || 'General', phone: p[2] || '', fee: parseFloat((p[3] || '').replace(/[^\d.]/g, '')) }; }).filter(r => r.name);
+    if (!rows.length) return ferr(form, 'Paste at least one line: Name, Class, Phone, Monthly fee.');
+    const bad = rows.find(r => !(r.fee >= 0) && !(defFee >= 0));
+    if (bad) return ferr(form, 'No fee found for ' + bad.name + '. Add it to the line or fill the default fee below.');
+    form.querySelector('button[type=submit]').disabled = true;
+    for (const r of rows) await put('students', uid(), { name: r.name, cls: r.cls, parent: '', phone: r.phone, fee: r.fee >= 0 ? r.fee : defFee, joined: from + '-01', dueDay: dd, note: '', active: true }, true);
+    closeSheet(); render(); toast(rows.length + (rows.length === 1 ? ' student added' : ' students added'));
+  } else if (kind === 'pay') {
+    const amount = parseFloat(g('amount')); if (!(amount > 0)) return ferr(form, 'Enter the amount received.');
+    const d = clone(S.pay[id] || { items: [] }); d.items = d.items || [];
+    d.items.push({ id: uid(), date: g('date') || ymd(today()), amount, mode: g('mode') });
+    await put('pay', id, d); toast(money(amount) + ' recorded'); openStudent(id);
+  } else if (kind === 'exam') {
+    const name = g('name'), max = parseFloat(g('max')); if (!name || !(max > 0)) return ferr(form, 'Enter the exam name and maximum marks.');
+    const nid = id || uid(), old = S.exams[nid] ? clone(S.exams[nid]) : { marks: {} };
+    const obj = Object.assign(old, { name, subject: g('subject'), cls: g('cls'), date: g('date') || ymd(today()), max });
+    await put('exams', nid, obj); toast('Saved'); marksSheet(nid);
+  } else if (kind === 'marks') {
+    const e = clone(S.exams[id]), m = {};
+    for (const [k, v] of f.entries()) {
+      if (String(v).trim() === '') continue; const n = parseFloat(v);
+      if (isNaN(n) || n < 0 || n > e.max) { const nm = S.students[k] ? S.students[k].name : 'a student'; return ferr(form, 'Marks for ' + nm + ' must be between 0 and ' + e.max + '.'); }
+      m[k] = n;
+    }
+    Object.keys(e.marks || {}).forEach(k => { if (!S.students[k] && e.marks[k] != null) m[k] = e.marks[k]; });
+    e.marks = m; await put('exams', id, e); closeSheet(); toast('Marks saved');
+  } else if (kind === 'slot') {
+    const sl = { id: id || uid(), day: parseInt(g('day'), 10), start: g('start'), end: g('end'), subject: g('subject'), cls: g('cls'), teacher: g('teacher'), room: g('room') };
+    if (!sl.subject || !sl.start || !sl.end) return ferr(form, 'Enter the subject and both times.');
+    if (toMin(sl.end) <= toMin(sl.start)) return ferr(form, 'The end time must be after the start time.');
+    const cf = slotConflicts(sl), w = form.querySelector('.form-warn');
+    if (cf.length && !form.dataset.warned) {
+      w.hidden = false; w.textContent = 'This overlaps with ' + cf.map(c => c.subject + ' (' + fmtT(c.start) + ' to ' + fmtT(c.end) + ')').join(', ') + '. Tap Save again to keep it anyway.';
+      form.dataset.warned = '1'; return;
+    }
+    const old = id && S.slots[id] ? clone(S.slots[id]) : {};
+    await put('slots', sl.id, Object.assign(old, sl)); S.day = sl.day; closeSheet(); render(); toast('Class saved');
+  }
+}
+
+/* ---------- actions ---------- */
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2800); }
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); toast('Copied'); return; } catch (e) {}
+  try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'Copied' : 'Press and hold the text to copy'); }
+  catch (e) { toast('Press and hold the text to copy'); }
+}
+async function delStudent(id) {
+  const ids = [id];
+  await del('students', id, true); await del('pay', id, true);
+  for (const e of Object.values(S.exams)) if (e.marks && e.marks[id] != null) { const c = clone(e); delete c.marks[id]; await put('exams', e.id, c, true); }
+  closeSheet(); render(); toast('Student deleted');
+}
+async function loadSample() {
+  const t = today(), first = new Date(t.getFullYear(), t.getMonth() - 2, 1), fs = ymd(first);
+  const defs = [
+    ['Aarav Sharma','Class 10',2000,5,'Rakesh Sharma',[58,66,74],3],['Diya Verma','Class 10',2000,5,'Sunita Verma',[82,79,64],1],
+    ['Kabir Singh','Class 10',2000,10,'Harpreet Singh',[45,44,46],2],['Meera Nair','Class 10',2000,5,'Anil Nair',[91,92,90],3],
+    ['Ananya Gupta','Class 9',1500,5,'Mohan Gupta',[71,74,73],3],['Rohan Mehta','Class 9',1500,1,'Kavita Mehta',[68,55,49],1],
+    ['Ishita Yadav','Class 9',1500,15,'Ramesh Yadav',[52,60,72],2],['Aditya Kumar','Class 9',1500,5,'Sanjay Kumar',[60,58,57],0],
+    ['Vivaan Joshi','Class 8',1200,5,'Neha Joshi',[88,90,93],3],['Saanvi Patel','Class 8',1200,7,'Jignesh Patel',[null,61,52],2.5],
+    ['Arjun Mishra','Class 8',1200,20,'Pooja Mishra',[35,38,41],3],['Tanvi Reddy','Class 8',1200,25,'Suresh Reddy',[74,70,66],1]];
+  const ids = [];
+  for (const d of defs) {
+    const id = uid(); ids.push(id);
+    await put('students', id, { name: d[0], cls: d[1], parent: d[4], phone: '', fee: d[2], joined: fs, dueDay: d[3], note: '', active: true, sample: true }, true);
+    const items = []; let units = d[6], i = 0;
+    while (units > 0) { const amt = Math.min(1, units) * d[2]; const dt = new Date(first.getFullYear(), first.getMonth() + i, Math.min(d[3], 28)); items.push({ id: uid(), date: ymd(dt > t ? t : dt), amount: amt, mode: i % 2 ? 'UPI' : 'Cash' }); units -= 1; i++; }
+    if (items.length) await put('pay', id, { items, sample: true }, true);
+  }
+  const ed = [-70, -35, -6], names = ['Unit Test 1', 'Unit Test 2', 'Unit Test 3'];
+  for (let k = 0; k < 3; k++) {
+    const marks = {}; defs.forEach((d, j) => { if (d[5][k] != null) marks[ids[j]] = d[5][k]; });
+    const dt = new Date(t.getFullYear(), t.getMonth(), t.getDate() + ed[k]);
+    await put('exams', uid(), { name: names[k], subject: 'Maths', cls: '', date: ymd(dt), max: 100, marks, sample: true }, true);
+  }
+  const plan = [['Class 8','Maths','16:00','17:00',[0,2,4],'Sharma Sir','Hall A'],['Class 9','Maths','17:00','18:00',[0,2,4],'Sharma Sir','Hall A'],
+    ['Class 8','English','17:00','18:00',[1,3],'Gupta Madam','Hall B'],['Class 9','Science','16:00','17:00',[1,3,5],'Verma Madam','Hall B'],
+    ['Class 10','Science','18:00','19:30',[0,2,4],'Verma Madam','Hall A'],['Class 10','Maths','18:00','19:30',[1,3,5],'Sharma Sir','Hall A']];
+  for (const p of plan) for (const dy of p[4]) await put('slots', uid(), { day: dy, start: p[2], end: p[3], subject: p[1], cls: p[0], teacher: p[5], room: p[6], sample: true }, true);
+  render(); toast('Sample data loaded');
+}
+async function removeSample() {
+  const gone = new Set(Object.values(S.students).filter(s => s.sample).map(s => s.id));
+  for (const c of COLS) for (const d of Object.values(S[c])) if (d && d.sample) await del(c, d.id, true);
+  for (const e of Object.values(S.exams)) { if (e.marks && Object.keys(e.marks).some(k => gone.has(k))) { const c = clone(e); Object.keys(c.marks).forEach(k => { if (gone.has(k)) delete c.marks[k]; }); await put('exams', e.id, c, true); } }
+  render(); toast('Sample data removed');
+}
+const csvCell = v => { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+async function exportFile(name, data) {
+  try { await S.dl.save({ filename: name, data }); toast('Saved'); } catch (e) { if (e && e.code !== 'declined') toast('Could not save the file here.'); }
+}
+function exportCsv() {
+  const t = today(), rows = [['Name','Class','Parent','Phone','Monthly fee','Fee status','Pending amount','Oldest due date','Total paid','Latest exam %','Exam trend']];
+  Object.values(S.students).sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+    const f = feeInfo(s, t), p = perf(s.id);
+    rows.push([s.name, s.cls, s.parent, s.phone, s.fee, s.active === false ? 'Left' : f.status, f.owed, f.oldest ? ymd(f.oldest.due) : '', f.paidTotal, p.last != null ? Math.round(p.last) : '', p.state]);
+  });
+  exportFile('scholars-hub-fees-' + ymd(t) + '.csv', '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n'));
+}
+
+function localDownloader() {
+  return { save: async o => { const url = URL.createObjectURL(new Blob([o.data], { type: 'application/octet-stream' })); const a = document.createElement('a'); a.href = url; a.download = o.filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); return { status: 'saved' }; } };
+}
+async function restoreFrom(file) {
+  let j; try { j = JSON.parse(await file.text()); } catch (e) { toast('This file is not a valid backup.'); return; }
+  if (!j || typeof j !== 'object' || !COLS.some(c => j[c] && typeof j[c] === 'object')) { toast('This file is not a Scholars Hub backup.'); return; }
+  let n = 0;
+  for (const c of COLS) for (const id of Object.keys(j[c] || {})) { if (j[c][id] && typeof j[c][id] === 'object') { await put(c, id, clone(j[c][id]), true); n++; } }
+  render(); toast('Backup restored (' + n + ' records)');
+}
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const tabBtn = e.target.closest('.tab'); if (tabBtn) { S.tab = tabBtn.dataset.tab; render(); window.scrollTo(0, 0); return; }
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  switch (a) {
+    case 'scrim': if (e.target === el) closeSheet(); break;
+    case 'close': closeSheet(); break;
+    case 'cancel-form': back(el.dataset.back); break;
+    case 'goto': S.tab = el.dataset.tab; render(); window.scrollTo(0, 0); break;
+    case 'open-student': openStudent(id); break;
+    case 'add-student': showSheet(studentForm()); focusFirst(); break;
+    case 'edit-student': showSheet(studentForm(id)); focusFirst(); break;
+    case 'import': showSheet(importForm()); focusFirst(); break;
+    case 'del-student': ask('Delete ' + S.students[id].name + ' with all fee records? This cannot be undone.', 'Delete student', () => delStudent(id), 'student:' + id); break;
+    case 'pay': showSheet(payForm(id)); { const i = $('#p-amt'); if (i) { i.focus(); i.select(); } } break;
+    case 'del-pay': ask('Delete this payment record?', 'Delete payment', async () => { const d = clone(S.pay[id]); d.items = d.items.filter(x => x.id !== el.dataset.pid); await put('pay', id, d); openStudent(id); toast('Payment deleted'); }, 'student:' + id); break;
+    case 'fcls': S.cls = el.dataset.v; render(); break;
+    case 'fff': S.ff = el.dataset.v; render(); break;
+    case 'add-exam': showSheet(examForm()); focusFirst(); break;
+    case 'edit-exam': showSheet(examForm(id)); focusFirst(); break;
+    case 'open-marks': marksSheet(id); break;
+    case 'del-exam': ask('Delete this exam and all its marks?', 'Delete exam', async () => { await del('exams', id); closeSheet(); toast('Exam deleted'); }); break;
+    case 'day': S.day = +el.dataset.v; render(); break;
+    case 'add-slot': showSheet(slotForm()); focusFirst(); break;
+    case 'edit-slot': showSheet(slotForm(id)); break;
+    case 'del-slot': ask('Delete this class from the timetable?', 'Delete class', async () => { await del('slots', id); closeSheet(); toast('Class deleted'); }); break;
+    case 'confirm-yes': { const f = confirmFn; confirmFn = null; if (f) f(); } break;
+    case 'copymsg': copyText(el.dataset.msg); break;
+    case 'sample': loadSample(); break;
+    case 'rm-sample': ask('Remove all sample students, fees, exams and classes? Records you added yourself stay.', 'Remove sample data', async () => { closeSheet(); await removeSample(); }); break;
+    case 'restore': { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json'; inp.onchange = () => { if (inp.files[0]) restoreFrom(inp.files[0]); }; inp.click(); } break;
+    case 'export-csv': exportCsv(); break;
+    case 'export-json': exportFile('scholars-hub-backup-' + ymd(today()) + '.json', JSON.stringify({ students: S.students, pay: S.pay, exams: S.exams, slots: S.slots }, null, 2)); break;
+  }
+});
+document.addEventListener('submit', e => { const f = e.target.closest('form[data-form]'); if (f) { e.preventDefault(); submitForm(f); } });
+document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value; render(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.sheet) { closeSheet(); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
+});
+init();
+</script>
+</body>
+</html>
